@@ -18,7 +18,6 @@ type Player interface {
     Color() Color
     SetPassNext(passNext bool)
     PassNext() bool
-    MovesMatrix() [8][8]float64
     GetShadow() Player
     Real() Player
     IsEqual(p Player) bool
@@ -49,7 +48,7 @@ type ShadowPlayer struct {
 
 
 func NewAIPlayer(name string) *AIPlayer {
-    return &AIPlayer{name, BLACK, 2, false, [8][8]float64{}}
+    return &AIPlayer{name, BLACK, 2, false}
 }
 func (s *AIPlayer) Name() string { return s.name }
 func (s *AIPlayer) IncPoint() { s.point++ }
@@ -71,7 +70,6 @@ func (s *AIPlayer) GetMove(model *AntiGame) string {
         moves := model.GetAvaliableMoves()
         movePos := moves[rand.Intn(len(moves))]
         move = coordToText(movePos)
-        s.movesMatrix[movePos[0]][movePos[1]] = 1
     }
     fmt.Println(move)
     return move
@@ -100,12 +98,13 @@ func NewMCTSPlayer(name string) *MCTSPlayer {
 }
 func (s *MCTSPlayer) GetMove(model *AntiGame) string {
     var move string
-    mcts := NewMCTS(time.Millisecond * 1800, model)
+    mcts := NewMCTS(time.Millisecond * 100, model)
     if s.PassNext() {
         s.SetPassNext(false)
         move = "pass"
     } else {
-        move = coordToText(mcts.FindNextMove())
+        // move = coordToText(mcts.FindNextMove())
+        move = coordToText(mcts.FindNextMove1())
     }
     fmt.Println(move)
     return move

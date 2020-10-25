@@ -19,9 +19,30 @@ func NewMCTS(calcTime time.Duration, model *AntiGame) *MCTS {
 }
 
 
+func (s *MCTS) FindNextMove1() [2]int {
+    startTime := time.Now()
+    root := s.tree.Root()
+    root.Expand()
+    i := 0
+    len := len(root.Childs())
+    for time.Since(startTime) < s.calcTime {
+        exploringNode := root.Childs()[i]
+        winner := s.randomPlayResult(exploringNode)
+        s.backPropagate(exploringNode, winner)
+        i++
+        if i == len {
+            i = 0
+        }
+    }
+    s.tree.SetRoot(s.tree.Root().getMaxWinScoreChild())
+    return s.tree.Root().Model().LastMove()
+}
+
+
 func (s *MCTS) FindNextMove() [2]int {
     startTime := time.Now()
     for time.Since(startTime) < s.calcTime {
+        // expansion
         promisingNode := s.selectPromisingNode()
         if !promisingNode.model.IsEndGame() {
             promisingNode.Expand()
@@ -30,7 +51,9 @@ func (s *MCTS) FindNextMove() [2]int {
         if len(exploringNode.Childs()) > 0 {
             exploringNode = promisingNode.RandomChild()
         }
+        // simulation
         winner := s.randomPlayResult(exploringNode)
+        // backpropagation
         s.backPropagate(exploringNode, winner)
     }
 
@@ -43,6 +66,7 @@ func (s *MCTS) FindNextMove() [2]int {
         }
     }
 
+    // return best move
     s.tree.SetRoot(s.tree.Root().getMaxWinScoreChild())
     return s.tree.Root().Model().LastMove()
 }
@@ -51,10 +75,14 @@ func (s *MCTS) FindNextMove() [2]int {
 func (s *MCTS) randomPlayResult(node *Node) Player {
     model := node.Model().Copy()
     winner := model.GetWinner()
+
+    // if we loose or game ends with a tie return MININT
     if model.IsEndGame() && (winner == nil || winner.IsEqual(s.opponent)) {
         node.Parent().SetWinScore(MININT)
         return model.GetWinner()
     }
+
+    // simulate random game
     for !model.IsEndGame() {
         moves := model.GetAvaliableMoves()
         if len(moves) > 0 {
@@ -69,6 +97,7 @@ func (s *MCTS) randomPlayResult(node *Node) Player {
 }
 
 func (s *MCTS) selectPromisingNode() *Node {
+    // find the most promisiong node with UCT
     node := s.tree.Root()
     for len(node.Childs()) != 0 {
         node = s.findBestNodeByUCT(node)

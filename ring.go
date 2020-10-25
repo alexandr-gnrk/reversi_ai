@@ -2,40 +2,33 @@ package main
 
 import (
     "fmt"
-    // "bufio"
     "os"
     "strconv"
     "math/rand"
     "time"
-    // "io/ioutil"
 )
 
 const DEBUG = false
 
 func main() {
     rand.Seed(time.Now().Unix())
-
-    var whoFirst string
-    var holeStr string
+    var myColor, holeStr string
     var player1, player2 Player
 
     fmt.Scanln(&holeStr)
+    // end if hole pos is incorrect
     if (len(holeStr) == 0) {
         return
     }
     i, j := textToCoord(holeStr)
-    fmt.Scanln(&whoFirst)
-    // writeFile(holeStr)
-    // writeFile(whoFirst)
+    fmt.Scanln(&myColor)
 
-
-    if whoFirst == "black" {
-        player1 = NewMCTSPlayer("Player1")
-        player2 = NewOpponentPlayer("Player2")
-    } else {
-        player1 = NewOpponentPlayer("Player1")
-        player2 = NewMCTSPlayer("Player2")
+    player1 = NewOpponentPlayer("Player1")
+    player2 = NewMCTSPlayer("Player2")
+    if myColor == "black" {
+        player1, player2 = player2, player1 
     }
+    
     // player1 = NewAIPlayer("Player1")
     // player2 = NewRandomPlayer("Player2")
     // player1 = NewOpponentPlayer("Player1")

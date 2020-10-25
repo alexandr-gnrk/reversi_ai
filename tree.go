@@ -44,6 +44,7 @@ func (s *Node) AddModel(model *AntiGame) {
 func (s *Node) getMaxWinScoreChild() *Node {
     // searching child node with highest win score
     maxWinScore := s.childs[0].winScore
+    // maxWinScore := float64(MININT)
     var maxNode *Node = s.childs[0]
     for _, node := range s.childs {
         if node.winScore > maxWinScore {
