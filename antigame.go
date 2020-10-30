@@ -12,15 +12,10 @@ type AntiGame struct {
     anotherPlayer Player
     board [8][8]Color
     holePos [2]int
+    lastMove [2]int
     moveNum int
     isGameOver bool
 }
-
-var DIRECTIONS = [8][2]int{
-    {-1, -1}, {-1, 0}, {-1, 1},
-    { 0, -1}, { 0, 1},
-    { 1, -1}, { 1, 0}, { 1, 1}}
-
 
 func NewAntiGame(holePos [2]int) *AntiGame {
     res := &AntiGame{}
@@ -28,6 +23,7 @@ func NewAntiGame(holePos [2]int) *AntiGame {
     res.currentPlayer = nil
     res.anotherPlayer = nil
     res.holePos = holePos
+    res.lastMove = [2]int{-1, -1}
     res.moveNum = 0
     res.isGameOver = false
     return res
@@ -53,16 +49,18 @@ func (s *AntiGame) initialPlacement() {
 
 func (s *AntiGame) CurrentPlayer() Player { return s.currentPlayer }
 func (s *AntiGame) AnotherPlayer() Player { return s.anotherPlayer }
+func (s *AntiGame) LastMove() [2]int { return s.lastMove }
 func (s *AntiGame) MoveNum() int { return s.moveNum }
 func (s *AntiGame) Copy() *AntiGame {
     cp := NewAntiGame(s.holePos)
-    cp.currentPlayer = s.currentPlayer.Copy()
-    cp.anotherPlayer = s.anotherPlayer.Copy()
+    cp.currentPlayer = s.currentPlayer.GetShadow()
+    cp.anotherPlayer = s.anotherPlayer.GetShadow()
     cp.board = s.BoardCopy()
     cp.moveNum = s.moveNum
     cp.isGameOver = s.isGameOver
     return cp
 }
+
 func (s *AntiGame) BoardCopy() [8][8]Color {
     var cp [8][8]Color
     for i := range s.board {
@@ -157,6 +155,7 @@ func (s *AntiGame) Move(i int, j int) {
         return
     }
     s.moveNum++
+    s.lastMove[0], s.lastMove[1] = i, j
     s.updateLines(i, j)
     s.board[i][j] = s.currentPlayer.Color()
 
@@ -201,6 +200,15 @@ func (s *AntiGame) IsIn(moves [][2]int, searchMove [2]int) bool {
         if move == searchMove { return true }
     }
     return false
+}
+
+func (s *AntiGame) GetWinner() Player {
+    if s.currentPlayer.Point() < s.anotherPlayer.Point() {
+        return s.CurrentPlayer()
+    } else if s.currentPlayer.Point() > s.anotherPlayer.Point() {
+        return s.AnotherPlayer()
+    }
+    return nil
 }
 
 

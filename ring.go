@@ -13,8 +13,15 @@ import (
 
 func main() {
     rand.Seed(time.Now().Unix())
-    var holeStr string
+
+    // model := NewAntiGame([2]int{0, 0})
+    // model.Start(NewAIPlayer("Player1"), NewAIPlayer("Player2"))
+    // mcts := NewMCTS(time.Millisecond * 200, model)
+    // mcts.FindNextMove()
+    
     var whoFirst string
+    var holeStr string
+    var player1, player2 Player
 
 
     fmt.Scanln(&holeStr)
@@ -22,12 +29,11 @@ func main() {
         return
     }
     fmt.Scanln(&whoFirst)
+    i, j := textToCoord(holeStr)
     // writeFile(holeStr)
     // writeFile(whoFirst)
-    i, j := textToCoord(holeStr)
 
 
-    var player1, player2 Player
     var isOpponentStarts bool = false
     if whoFirst == "black" {
         player1 = NewAIPlayer("Player1")

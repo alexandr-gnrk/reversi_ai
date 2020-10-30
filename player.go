@@ -8,6 +8,7 @@ import (
 )
 
 type Player interface {
+    Name() string
     GetMove(model *AntiGame) string
     IncPoint()
     DecPoint()
@@ -16,8 +17,9 @@ type Player interface {
     Color() Color
     SetPassNext(passNext bool)
     PassNext() bool
-    Copy() Player
+    // Copy() Player
     MovesMatrix() [8][8]float64
+    GetShadow() Player
 }
 
 type AIPlayer struct {
@@ -34,6 +36,7 @@ func NewAIPlayer(name string) *AIPlayer {
 }
 
 
+func (s *AIPlayer) Name() string { return s.name }
 func (s *AIPlayer) IncPoint() { s.point++ }
 func (s *AIPlayer) DecPoint() { s.point-- }
 func (s *AIPlayer) Point() int { return s.point }
@@ -42,13 +45,7 @@ func (s *AIPlayer) Color() Color { return s.color }
 func (s *AIPlayer) SetPassNext(passNext bool) { s.passNext = passNext }
 func (s *AIPlayer) PassNext() bool { return s.passNext }
 func (s *AIPlayer) MovesMatrix() [8][8]float64 { return s.movesMatrix }
-func (s *AIPlayer) Copy() Player { 
-    cp := NewAIPlayer(s.name) 
-    cp.color = s.color
-    cp.point = s.point
-    cp.passNext = s.passNext
-    return cp
-}
+func (s *AIPlayer) GetShadow() Player { return NewShadowPlayer(s) }
 
 
 func (s *AIPlayer) GetMove(model *AntiGame) string {
@@ -82,6 +79,7 @@ func NewOpponentPlayer(name string) *OpponentPlayer {
 }
 
 
+func (s *OpponentPlayer) Name() string { return s.name }
 func (s *OpponentPlayer) IncPoint() { s.point++ }
 func (s *OpponentPlayer) DecPoint() { s.point-- }
 func (s *OpponentPlayer) Point() int { return s.point }
@@ -90,13 +88,7 @@ func (s *OpponentPlayer) Color() Color { return s.color }
 func (s *OpponentPlayer) SetPassNext(passNext bool) { s.passNext = passNext }
 func (s *OpponentPlayer) PassNext() bool { return s.passNext }
 func (s *OpponentPlayer) MovesMatrix() [8][8]float64 { return [8][8]float64{} }
-func (s *OpponentPlayer) Copy() Player { 
-    cp := NewOpponentPlayer(s.name) 
-    cp.color = s.color
-    cp.point = s.point
-    cp.passNext = s.passNext
-    return cp
-}
+func (s *OpponentPlayer) GetShadow() Player { return NewShadowPlayer(s) }
 
 
 func (s *OpponentPlayer) GetMove(model *AntiGame) string {
@@ -144,3 +136,27 @@ func normMatrix(matrix [8][8]float64) [8][8]float64 {
     }
     return matrix
 }
+
+
+
+type ShadowPlayer struct {
+    real Player
+    point int
+    passNext bool
+}
+
+func NewShadowPlayer(real Player) *ShadowPlayer {
+    return &ShadowPlayer{real, real.Point(), real.PassNext()}
+}
+
+func (s *ShadowPlayer) Name() string { return s.real.Name() }
+func (s *ShadowPlayer) IncPoint() { s.point++ }
+func (s *ShadowPlayer) DecPoint() { s.point-- }
+func (s *ShadowPlayer) Point() int { return s.point }
+func (s *ShadowPlayer) SetColor(color Color) { s.real.SetColor(color) }
+func (s *ShadowPlayer) Color() Color { return s.real.Color() }
+func (s *ShadowPlayer) SetPassNext(passNext bool) { s.passNext = passNext }
+func (s *ShadowPlayer) PassNext() bool { return s.passNext }
+func (s *ShadowPlayer) MovesMatrix() [8][8]float64 { return s.real.MovesMatrix() }
+func (s *ShadowPlayer) GetMove(model *AntiGame) string { return s.real.GetMove(model) }
+func (s *ShadowPlayer) GetShadow() Player { return s.real.GetShadow() }
