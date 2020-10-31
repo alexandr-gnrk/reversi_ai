@@ -32,7 +32,6 @@ type AIPlayer struct {
     color Color
     point int
     passNext bool
-    movesMatrix [8][8]float64
 }
 type MinimaxPlayer struct { 
     *AIPlayer 
@@ -61,7 +60,6 @@ func (s *AIPlayer) SetColor(color Color) { s.color = color }
 func (s *AIPlayer) Color() Color { return s.color }
 func (s *AIPlayer) SetPassNext(passNext bool) { s.passNext = passNext }
 func (s *AIPlayer) PassNext() bool { return s.passNext }
-func (s *AIPlayer) MovesMatrix() [8][8]float64 { return s.movesMatrix }
 func (s *AIPlayer) Real() Player { return s }
 func (s *AIPlayer) GetShadow() Player { return NewShadowPlayer(s) }
 func (s *AIPlayer) IsEqual(p Player) bool { return s == p.Real() }
