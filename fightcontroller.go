@@ -32,6 +32,7 @@ func (s *FightController) Start(player1 Player, player2 Player, isOpponentStarts
         }
         // println(move)
         // fmt.Println("Move:", s.gamemodel.MoveNum())
+        // fmt.Println("Moves:", s.gamemodel.GetAvaliableMoves())
         // s.gamemodel.Dump()
         // println()
         // println()

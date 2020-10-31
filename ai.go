@@ -1,6 +1,9 @@
 package main
 
-import "math"
+import (
+    "math"
+    "math/rand"
+)
 
 
 
@@ -20,8 +23,9 @@ func (s *AI) GetBestMove(depth int) [2]int {
     var bestScore int = MAXINT
     model := s.model.Copy()
 
-    writeFile(model.GetAvaliableMoves())
-    for _, move := range model.GetAvaliableMoves() {
+    moves := model.GetAvaliableMoves()
+    writeFile(moves)
+    for _, move := range moves {
         model.Move(move[0], move[1])
         score = s.minimax(model, depth, MININT, MAXINT, true)
 
@@ -30,6 +34,9 @@ func (s *AI) GetBestMove(depth int) [2]int {
             choseMove = move
         }
         model = s.model.Copy()
+    }
+    if bestScore == MAXINT {
+        choseMove = moves[rand.Intn(len(moves))]
     }
     writeFile(choseMove)
     return choseMove
