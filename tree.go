@@ -53,10 +53,6 @@ func (s *Node) getMaxWinScoreChild() *Node {
 }
 
 func (s *Node) Expand() {
-    // TODO: Delete
-    if s.model.IsEndGame() {
-        return
-    }
     moves := s.model.GetAvaliableMoves()
     if len(moves) == 0 {
         newModel := s.model.Copy()

@@ -43,13 +43,7 @@ func (s *MCTS) FindNextMove() [2]int {
         }
     }
 
-    
-    // root could be a nill
-    // all node is loosing
     s.tree.SetRoot(s.tree.Root().getMaxWinScoreChild())
-    // if s.tree.Root() == nil {
-    //     return s.tree.Root().RandomChild().Model().LastMove()
-    // }
     return s.tree.Root().Model().LastMove()
 }
 
@@ -84,10 +78,8 @@ func (s *MCTS) selectPromisingNode() *Node {
 
 
 func (s *MCTS) backPropagate(node *Node, player Player) {
-    // fmt.Println("Player:", player)
     for node != nil {
         node.IncVisitCount()
-        // if player != nil && node.Model().CurrentPlayer().IsEqual(player) {
         if player != nil && !s.opponent.IsEqual(player) {
             node.AddWinScore(10)
         }

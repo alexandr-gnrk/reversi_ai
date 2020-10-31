@@ -1,10 +1,5 @@
 package main
 
-import (
-    // "fmt"
-    // "math"
-)
-
 
 type AntiGame struct {
     dimension int
@@ -166,9 +161,6 @@ func (s *AntiGame) Move(i int, j int) {
         s.currentPlayer.SetPassNext(true)
         return
     }
-    // if s.IsEndGame() {
-    //     s.endGame()
-    // }
 }
 
 
