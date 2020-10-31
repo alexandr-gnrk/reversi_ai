@@ -10,59 +10,64 @@ import (
     // "io/ioutil"
 )
 
+const DEBUG = false
 
 func main() {
     rand.Seed(time.Now().Unix())
 
-    // model := NewAntiGame([2]int{0, 0})
-    // model.Start(NewAIPlayer("Player1"), NewAIPlayer("Player2"))
-    // mcts := NewMCTS(time.Millisecond * 200, model)
-    // mcts.FindNextMove()
-    
     var whoFirst string
     var holeStr string
     var player1, player2 Player
-
 
     fmt.Scanln(&holeStr)
     if (len(holeStr) == 0) {
         return
     }
-    fmt.Scanln(&whoFirst)
     i, j := textToCoord(holeStr)
+    fmt.Scanln(&whoFirst)
     // writeFile(holeStr)
     // writeFile(whoFirst)
 
 
-    var isOpponentStarts bool = false
     if whoFirst == "black" {
-        player1 = NewAIPlayer("Player1")
+        player1 = NewMCTSPlayer("Player1")
         player2 = NewOpponentPlayer("Player2")
     } else {
-        isOpponentStarts = true
         player1 = NewOpponentPlayer("Player1")
-        player2 = NewAIPlayer("Player2")
+        player2 = NewMCTSPlayer("Player2")
     }
     // player1 = NewAIPlayer("Player1")
-    // player2 = NewAIPlayer("Player2")
+    // player2 = NewRandomPlayer("Player2")
     // player1 = NewOpponentPlayer("Player1")
     // player2 = NewOpponentPlayer("Player2")
-    // controller := NewFightController([2]int{i, j})
-    controller := NewFightController([2]int{i, j})
-    controller.Start(player1, player2, isOpponentStarts)
-// var cumMatrix [8][8]float64
-// for i:=0; i < 100000; i++ {
-//     x, y := rand.Intn(8), rand.Intn(8)
-//     player1 = NewAIPlayer("Player1")
-//     player2 = NewAIPlayer("Player2")
-//     controller = NewFightController([2]int{x, y})
-//     cumMatrix = addMatrix(
-//         cumMatrix,
-//         controller.Start(player1, player2, isOpponentStarts))
-// }
-// printMatrix(normMatrix(cumMatrix))
+
+    startFight([2]int{i, j}, player1, player2)
+
     // wait until this process is killed
     for {}
+}
+
+
+func startFight(hole [2]int, player1 Player, player2 Player){
+    model := NewAntiGame(hole)
+    model.Start(player1, player2)
+
+    var move string 
+    for !model.IsEndGame() {
+        move = model.CurrentPlayer().GetMove(model)
+        if move == "pass" {
+            model.PassMove()
+        } else {
+            i, j := textToCoord(move)
+            model.Move(i, j)
+        }
+        if DEBUG {
+            fmt.Println(move)
+            fmt.Println("Move:", model.MoveNum())
+            fmt.Println("Moves:", model.GetAvaliableMoves())
+            model.Dump()
+        }
+    }
 }
 
 func writeFile(x interface{}){

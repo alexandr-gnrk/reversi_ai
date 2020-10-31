@@ -3,7 +3,8 @@ package main
 
 import (
     "fmt"
-    // "math/rand"
+    "time"
+    "math/rand"
     // "../antigame"
 )
 
@@ -25,6 +26,7 @@ type Player interface {
 }
 
 
+
 type AIPlayer struct {
     name string
     color Color
@@ -32,6 +34,21 @@ type AIPlayer struct {
     passNext bool
     movesMatrix [8][8]float64
 }
+type MinimaxPlayer struct { 
+    *AIPlayer 
+}
+type MCTSPlayer struct { 
+    *AIPlayer 
+}
+type OpponentPlayer struct { 
+    *AIPlayer 
+}
+type ShadowPlayer struct {
+    Player
+    point int
+    passNext bool
+}
+
 
 func NewAIPlayer(name string) *AIPlayer {
     return &AIPlayer{name, BLACK, 2, false, [8][8]float64{}}
@@ -54,20 +71,47 @@ func (s *AIPlayer) GetMove(model *AntiGame) string {
         s.SetPassNext(false)
         move = "pass"
     } else {
-        ai := NewAI(s, model)
-        move = coordToText(ai.GetBestMove(3))
-        // moves := model.GetAvaliableMoves()
-        // movePos := moves[rand.Intn(len(moves))]
-        // move = coordToText(movePos)
-        // s.movesMatrix[movePos[0]][movePos[1]] = 1
+        moves := model.GetAvaliableMoves()
+        movePos := moves[rand.Intn(len(moves))]
+        move = coordToText(movePos)
+        s.movesMatrix[movePos[0]][movePos[1]] = 1
     }
     fmt.Println(move)
     return move
 }
 
 
-type OpponentPlayer struct { 
-    *AIPlayer 
+func NewMinimaxPlayer(name string) *MinimaxPlayer {
+    return &MinimaxPlayer{NewAIPlayer(name)}
+}
+func (s *MinimaxPlayer) GetMove(model *AntiGame) string {
+    var move string
+        if s.PassNext() {
+        s.SetPassNext(false)
+        move = "pass"
+    } else {
+        ai := NewMinimax(s, model)
+        move = coordToText(ai.GetBestMove(3))
+    }
+    fmt.Println(move)
+    return move
+}
+
+
+func NewMCTSPlayer(name string) *MCTSPlayer {
+    return &MCTSPlayer{NewAIPlayer(name)}
+}
+func (s *MCTSPlayer) GetMove(model *AntiGame) string {
+    var move string
+    mcts := NewMCTS(time.Millisecond * 1800, model)
+    if s.PassNext() {
+        s.SetPassNext(false)
+        move = "pass"
+    } else {
+        move = coordToText(mcts.FindNextMove())
+    }
+    fmt.Println(move)
+    return move
 }
 
 func NewOpponentPlayer(name string) *OpponentPlayer {
@@ -81,12 +125,6 @@ func (s *OpponentPlayer) GetMove(model *AntiGame) string {
 }
 
 
-type ShadowPlayer struct {
-    Player
-    point int
-    passNext bool
-}
-
 func NewShadowPlayer(real Player) *ShadowPlayer {
     return &ShadowPlayer{real, real.Point(), real.PassNext()}
 }
@@ -97,46 +135,3 @@ func (s *ShadowPlayer) Point() int { return s.point }
 func (s *ShadowPlayer) SetPassNext(passNext bool) { s.passNext = passNext }
 func (s *ShadowPlayer) PassNext() bool { return s.passNext }
 func (s *ShadowPlayer) Real() Player { return s.Player }
-
-
-func printMatrix(matrix [8][8]float64) {
-    for i := 0; i < 8; i++ {
-        for j := 0; j < 8; j++ {
-            // fmt.Print(matrix[i][j], " ")
-            fmt.Printf("%.5f ", matrix[i][j])
-        }
-        fmt.Println()
-    }
-}
-
-
-func addMatrix(matrix1 [8][8]float64, matrix2 [8][8]float64) [8][8]float64 {
-    var matrix3 [8][8]float64
-    for i := 0; i < 8; i++ {
-        for j := 0; j < 8; j++ {
-            matrix3[i][j] = matrix1[i][j] + matrix2[i][j]
-        }
-    }
-    return matrix3
-}
-
-
-func normMatrix(matrix [8][8]float64) [8][8]float64 {
-    var max float64 = matrix[0][0]
-    for i := 0; i < 8; i++ {
-        for j := 0; j < 8; j++ {
-            if matrix[i][j] > max {
-                max = matrix[i][j]
-            }
-        }
-    }
-    for i := 0; i < 8; i++ {
-        for j := 0; j < 8; j++ {
-            matrix[i][j] /= max
-        }
-    }
-    return matrix
-}
-
-
-
