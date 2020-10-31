@@ -36,12 +36,14 @@ func (s *Node) AddNode(node *Node) {
 }
 
 func (s *Node) AddModel(model *AntiGame) {
+    // add new node by model
     s.AddNode(NewNode(model, s))
 }
 
 
 func (s *Node) getMaxWinScoreChild() *Node {
-    maxWinScore := float64(MININT)
+    // searching child node with highest win score
+    maxWinScore := s.childs[0].winScore
     var maxNode *Node = s.childs[0]
     for _, node := range s.childs {
         if node.winScore > maxWinScore {
@@ -53,6 +55,7 @@ func (s *Node) getMaxWinScoreChild() *Node {
 }
 
 func (s *Node) Expand() {
+    // add all possible new nodes
     moves := s.model.GetAvaliableMoves()
     if len(moves) == 0 {
         newModel := s.model.Copy()
