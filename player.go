@@ -5,7 +5,6 @@ import (
     "fmt"
     "time"
     "math/rand"
-    // "../antigame"
 )
 
 
