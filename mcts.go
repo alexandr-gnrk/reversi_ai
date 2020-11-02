@@ -2,139 +2,128 @@ package main
 
 import (
     "time"
-    "math"
-    "fmt"
     "math/rand"
 )
 
 // MonteCarloTreeSearch
 type MCTS struct {
     calcTime time.Duration
-    tree *Tree
+    model *AntiGame
     opponent Player
 }
 
 func NewMCTS(calcTime time.Duration, model *AntiGame) *MCTS {
-    return &MCTS{calcTime, NewTree(model), model.AnotherPlayer()}
+    return &MCTS{calcTime, model, model.AnotherPlayer()}
 }
 
 
-func (s *MCTS) FindNextMove1() [2]int {
+
+func (s *MCTS) FindNextMove() *Move {
     startTime := time.Now()
-    root := s.tree.Root()
-    root.Expand()
-    i := 0
-    len := len(root.Childs())
+    moves := s.model.GetAvaliableMoves()
+    len := len(moves)
+    var wins []int = make([]int, len)
+    
+    type WinResult struct {
+        moveNum int
+        winner Player
+    }
+
+    ch := make(chan WinResult)
+    done := make(chan struct{})
+    for i := 0; i < len; i++ {
+        go func(moveNum int, move *Move, c chan WinResult, done chan struct{}) {
+            for {
+                select {
+                case ch <- WinResult{moveNum, s.randomPlay(s.model, move)}:
+                case <- done:
+                    return
+                }
+            } 
+        }(i, moves[i], ch, done)
+    }
+
     for time.Since(startTime) < s.calcTime {
-        exploringNode := root.Childs()[i]
-        winner := s.randomPlayResult(exploringNode)
-        s.backPropagate(exploringNode, winner)
-        i++
-        if i == len {
-            i = 0
+        select {
+        case res := <- ch:
+            if res.winner != nil && !res.winner.IsEqual(s.opponent) {
+                wins[res.moveNum]++
+            }
         }
     }
-    s.tree.SetRoot(s.tree.Root().getMaxWinScoreChild())
-    return s.tree.Root().Model().LastMove()
+    done <- struct{}{}
+    
+    maxWins := wins[0]
+    maxMove := moves[0]
+    allWins := 0
+    for i, move := range moves {
+        allWins += wins[i]
+        if wins[i] > maxWins {
+            maxWins = wins[i]
+            maxMove = move
+        }
+    }
+    // writeFile(allWins)
+    // writeFile(wins)
+    return maxMove
 }
 
 
-func (s *MCTS) FindNextMove() [2]int {
-    startTime := time.Now()
-    for time.Since(startTime) < s.calcTime {
-        // expansion
-        promisingNode := s.selectPromisingNode()
-        if !promisingNode.model.IsEndGame() {
-            promisingNode.Expand()
-        }
-        exploringNode := promisingNode
-        if len(exploringNode.Childs()) > 0 {
-            exploringNode = promisingNode.RandomChild()
-        }
-        // simulation
-        winner := s.randomPlayResult(exploringNode)
-        // backpropagation
-        s.backPropagate(exploringNode, winner)
-    }
-
-    if DEBUG {
-        fmt.Print("Root: ")
-        fmt.Println(s.tree.Root())
-        fmt.Println("Childs: ")
-        for _, node := range s.tree.Root().Childs() {
-            fmt.Println("\t", node)
-        }
-    }
-
-    // return best move
-    s.tree.SetRoot(s.tree.Root().getMaxWinScoreChild())
-    return s.tree.Root().Model().LastMove()
-}
-
-
-func (s *MCTS) randomPlayResult(node *Node) Player {
-    model := node.Model().Copy()
-    winner := model.GetWinner()
-
-    // if we loose or game ends with a tie return MININT
-    if model.IsEndGame() && (winner == nil || winner.IsEqual(s.opponent)) {
-        node.Parent().SetWinScore(MININT)
-        return model.GetWinner()
-    }
+func (s *MCTS) randomPlay(srcModel *AntiGame , move *Move) Player {
+    model := srcModel.Copy()
+    model.Move(move)
 
     // simulate random game
     for !model.IsEndGame() {
         moves := model.GetAvaliableMoves()
-        if len(moves) > 0 {
-            move := moves[rand.Intn(len(moves))]
-            model.Move(move[0], move[1])
-        } else {
-            model.PassMove()
-        }
+        move := moves[rand.Intn(len(moves))]
+        model.Move(move)
     }
 
     return model.GetWinner()
 }
 
-func (s *MCTS) selectPromisingNode() *Node {
-    // find the most promisiong node with UCT
-    node := s.tree.Root()
-    for len(node.Childs()) != 0 {
-        node = s.findBestNodeByUCT(node)
-    }
-    return node
-}
+
+// func (s *MCTS) FindNextMove1() *Move {
+//     startTime := time.Now()
+//     moves := s.model.GetAvaliableMoves()
+//     len := len(moves)
+//     var wins []int = make([]int, len) 
+//     i := 0
+//     for time.Since(startTime) < s.calcTime {
+//         winner := s.randomPlay(moves[i])
+//         if winner != nil && !winner.IsEqual(s.opponent) {
+//             wins[i]++
+//         }
+//         i++
+//         if i == len {
+//             i = 0
+//         }
+//     }
+    
+//     maxWins := wins[0]
+//     maxMove := moves[0]
+//     for i, move := range moves {
+//         if wins[i] > maxWins {
+//             maxWins = wins[i]
+//             maxMove = move
+//         }
+//     }
+//     writeFile(wins)
+//     return maxMove
+// }
 
 
-func (s *MCTS) backPropagate(node *Node, player Player) {
-    for node != nil {
-        node.IncVisitCount()
-        if player != nil && !s.opponent.IsEqual(player) {
-            node.AddWinScore(10)
-        }
-        node = node.Parent()
-    }
-}
+// func (s *MCTS) randomPlay(move *Move) Player {
+//     model := s.model.Copy()
+//     model.Move(move)
 
+//     // simulate random game
+//     for !model.IsEndGame() {
+//         moves := model.GetAvaliableMoves()
+//         move := moves[rand.Intn(len(moves))]
+//         model.Move(move)
+//     }
 
-func (s *MCTS) findBestNodeByUCT(node *Node) *Node {
-    parentVisit := node.VisitCount()
-    maxUCT := float64(MININT)
-    var maxNode *Node
-    for _, currNode := range node.Childs() {
-        UCT := s.uctValue(parentVisit, currNode.WinScore(), currNode.VisitCount())
-        if UCT > maxUCT {
-            maxUCT = UCT
-            maxNode = currNode
-        }
-    }
-    // maxNode := node.Childs()[rand.Intn(len(node.Childs()))]
-    return maxNode
-}
-
-func (s *MCTS) uctValue(parentVisit int, winScore float64, visit int) float64 {
-    if visit == 0 {
-        return float64(MAXINT)
-    }
-    return (winScore / float64(visit)) + 1.41 * math.Sqrt(math.Log(float64(parentVisit)) / float64(visit))
-}
+//     return model.GetWinner()
+// }

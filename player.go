@@ -10,26 +10,25 @@ import (
 
 type Player interface {
     Name() string
-    GetMove(model *AntiGame) string
+    GetMove(model *AntiGame) *Move
     IncPoint()
     DecPoint()
     Point() int
     SetColor(color Color)
     Color() Color
-    SetPassNext(passNext bool)
-    PassNext() bool
     GetShadow() Player
     Real() Player
     IsEqual(p Player) bool
+    LastMove() *Move
+    SetLastMove(move *Move)
 }
-
 
 
 type AIPlayer struct {
     name string
     color Color
     point int
-    passNext bool
+    lastMove *Move
 }
 type MinimaxPlayer struct { 
     *AIPlayer 
@@ -43,12 +42,12 @@ type OpponentPlayer struct {
 type ShadowPlayer struct {
     Player
     point int
-    passNext bool
+    lastMove *Move
 }
 
 
 func NewAIPlayer(name string) *AIPlayer {
-    return &AIPlayer{name, BLACK, 2, false}
+    return &AIPlayer{name, BLACK, 2, &Move{}}
 }
 func (s *AIPlayer) Name() string { return s.name }
 func (s *AIPlayer) IncPoint() { s.point++ }
@@ -56,22 +55,15 @@ func (s *AIPlayer) DecPoint() { s.point-- }
 func (s *AIPlayer) Point() int { return s.point }
 func (s *AIPlayer) SetColor(color Color) { s.color = color }
 func (s *AIPlayer) Color() Color { return s.color }
-func (s *AIPlayer) SetPassNext(passNext bool) { s.passNext = passNext }
-func (s *AIPlayer) PassNext() bool { return s.passNext }
 func (s *AIPlayer) Real() Player { return s }
 func (s *AIPlayer) GetShadow() Player { return NewShadowPlayer(s) }
 func (s *AIPlayer) IsEqual(p Player) bool { return s == p.Real() }
-func (s *AIPlayer) GetMove(model *AntiGame) string {
-    var move string
-    if s.PassNext() {
-        s.SetPassNext(false)
-        move = "pass"
-    } else {
-        moves := model.GetAvaliableMoves()
-        movePos := moves[rand.Intn(len(moves))]
-        move = coordToText(movePos)
-    }
-    fmt.Println(move)
+func (s *AIPlayer) LastMove() *Move { return s.lastMove }
+func (s *AIPlayer) SetLastMove(move *Move) { s.lastMove = move }
+func (s *AIPlayer) GetMove(model *AntiGame) *Move {
+    moves := model.GetAvaliableMoves()
+    move := moves[rand.Intn(len(moves))]
+    fmt.Println(move.ToText())
     return move
 }
 
@@ -79,16 +71,9 @@ func (s *AIPlayer) GetMove(model *AntiGame) string {
 func NewMinimaxPlayer(name string) *MinimaxPlayer {
     return &MinimaxPlayer{NewAIPlayer(name)}
 }
-func (s *MinimaxPlayer) GetMove(model *AntiGame) string {
-    var move string
-        if s.PassNext() {
-        s.SetPassNext(false)
-        move = "pass"
-    } else {
-        ai := NewMinimax(s, model)
-        move = coordToText(ai.GetBestMove(3))
-    }
-    fmt.Println(move)
+func (s *MinimaxPlayer) GetMove(model *AntiGame) *Move  {
+    move := NewMinimax(s, model).GetBestMove(3)
+    fmt.Println(move.ToText())
     return move
 }
 
@@ -96,17 +81,10 @@ func (s *MinimaxPlayer) GetMove(model *AntiGame) string {
 func NewMCTSPlayer(name string) *MCTSPlayer {
     return &MCTSPlayer{NewAIPlayer(name)}
 }
-func (s *MCTSPlayer) GetMove(model *AntiGame) string {
-    var move string
-    mcts := NewMCTS(time.Millisecond * 100, model)
-    if s.PassNext() {
-        s.SetPassNext(false)
-        move = "pass"
-    } else {
-        // move = coordToText(mcts.FindNextMove())
-        move = coordToText(mcts.FindNextMove1())
-    }
-    fmt.Println(move)
+func (s *MCTSPlayer) GetMove(model *AntiGame) *Move  {
+    mcts := NewMCTS(time.Millisecond * 300, model)
+    move := mcts.FindNextMove()
+    fmt.Println(move.ToText())
     return move
 }
 
@@ -114,20 +92,20 @@ func NewOpponentPlayer(name string) *OpponentPlayer {
     return &OpponentPlayer{NewAIPlayer(name)}
 }
 
-func (s *OpponentPlayer) GetMove(model *AntiGame) string {
+func (s *OpponentPlayer) GetMove(model *AntiGame) *Move {
     var move string
     fmt.Scanln(&move)
-    return move
+    return (&Move{}).FromText(move)
 }
 
 
 func NewShadowPlayer(real Player) *ShadowPlayer {
-    return &ShadowPlayer{real, real.Point(), real.PassNext()}
+    return &ShadowPlayer{real, real.Point(), real.LastMove()}
 }
 
 func (s *ShadowPlayer) IncPoint() { s.point++ }
 func (s *ShadowPlayer) DecPoint() { s.point-- }
 func (s *ShadowPlayer) Point() int { return s.point }
-func (s *ShadowPlayer) SetPassNext(passNext bool) { s.passNext = passNext }
-func (s *ShadowPlayer) PassNext() bool { return s.passNext }
 func (s *ShadowPlayer) Real() Player { return s.Player }
+func (s *ShadowPlayer) LastMove() *Move { return s.lastMove }
+func (s *ShadowPlayer) SetLastMove(move *Move) { s.lastMove = move }

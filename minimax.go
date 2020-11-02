@@ -17,16 +17,16 @@ func NewMinimax(player Player, model *AntiGame) *Minimax {
 }
 
 
-func (s *Minimax) GetBestMove(depth int) [2]int {
+func (s *Minimax) GetBestMove(depth int) *Move {
     var score int
-    var choseMove [2]int
+    var choseMove *Move
     var bestScore int = MAXINT
     model := s.model.Copy()
 
     moves := model.GetAvaliableMoves()
-    writeFile(moves)
+
     for _, move := range moves {
-        model.Move(move[0], move[1])
+        model.Move(move)
         score = s.minimax(model, depth, MININT, MAXINT, true)
 
         if score < bestScore {
@@ -38,7 +38,7 @@ func (s *Minimax) GetBestMove(depth int) [2]int {
     if bestScore == MAXINT {
         choseMove = moves[rand.Intn(len(moves))]
     }
-    writeFile(choseMove)
+
     return choseMove
 }
 
@@ -54,7 +54,7 @@ func (s *Minimax) minimax(srcModel *AntiGame, depth int, alpha int, beta int, is
     if isMinimizing {
         bestScore = MAXINT
         for _, move := range model.GetAvaliableMoves() {
-            model.Move(move[0], move[1])
+            model.Move(move)
             score = s.minimax(model, depth - 1, alpha, beta, false)
             bestScore = s.Min(score, bestScore)
             beta = s.Min(beta, bestScore)
@@ -66,7 +66,7 @@ func (s *Minimax) minimax(srcModel *AntiGame, depth int, alpha int, beta int, is
     } else {
         bestScore = MININT
         for _, move := range model.GetAvaliableMoves() {
-            model.Move(move[0], move[1])
+            model.Move(move)
             score = s.minimax(model, depth - 1, alpha, beta, true)
             bestScore = s.Max(score, bestScore)
             alpha = s.Max(beta, bestScore)
@@ -92,21 +92,6 @@ func (s *Minimax) countScore(model *AntiGame) int {
     return score
 }
 
-
-func (s *Minimax) getCoeff(i int, j int) int {
-    if i > 3 {
-        i -= 3
-    } else {
-        i = 4 - i
-    }
-
-    if j > 3 {
-        j -= 3
-    } else {
-        j = 4 -j
-    }
-    return int(math.Pow(2.0, float64(s.Max(i, j))))
-}
 
 func (s *Minimax) mapInd(ind int) int {
     if ind > 3 {
